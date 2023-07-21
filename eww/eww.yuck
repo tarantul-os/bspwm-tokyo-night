@@ -1,0 +1,86 @@
+(defwindow bar
+    :monitor 0
+    :geometry (geometry :x "0%"
+                        :y "-10px"
+                        :width "100%"
+                        :height "40px"
+                        :anchor "bottom center")
+    :stacking "fg"
+    :reserve (struts :distance "50px" :side "bottom")
+    :windowtype "dock"
+    :wm-ignore false
+    (main))
+
+(defwidget main []
+    (box :class "mainbox" :space-evenly true
+        (left)
+        (center)
+        (right)
+    )
+)
+
+(defpoll time :interval "1s" "date '+%H:%M'")
+(defpoll datetime :interval "1s" "date '+%H:%M %b %d'")
+(defvar show_datetime false)
+
+(defpoll keyboard_layout :interval "1s" "xkblayout-state print \"%s\"")
+
+(defwidget left []
+    (box :space-evenly false :class "leftbox" :halign "start"
+        (box :orientation "h" :space-evenly false
+            (label :class "timeicon" :text " ")
+            (button :class "time" :onclick "~/.config/eww/scripts/update_time.sh" "${show_datetime ? '${datetime}' : '${time}'}")
+        )
+
+        (label :class "sep" :text "|")
+
+        (label :class "keyboard_layout" :text keyboard_layout)
+
+        (label :class "sep" :text "|")
+
+        (battery)
+
+        (label :class "sep" :text "|")
+
+        (volume)
+    )
+)
+
+(defwidget right []
+    (box :space-evenly false :class "rightbox" :halign "end"
+        (systray :pack_direction "ltr")
+    )
+)
+
+(defwidget center []
+    (box :space-evenly false :class "centerbox" :halign "center"
+        (workspaces)
+    )
+)
+
+(defpoll current_percentage :interval "1s" "~/.config/eww/scripts/battery.sh")
+
+(defwidget battery []
+    (box :space-evenly false
+        (label :class "baticon ${current_percentage <= 25 ? 'low' : '${current_percentage <= 50 ? 'med' : '${current_percentage <= 100 ? 'high' : ''}'}'}"
+               :text "${current_percentage <= 15 ? ' ' : '${current_percentage <= 25 ? ' ' : '${current_percentage <= 50 ? ' ' : '${current_percentage <= 75 ? ' ' : '${current_percentage <= 95 ? ' ' : ' '}'}'}'}'}")
+    )
+)
+
+(defpoll current_vol :interval "1s" "awk -F\"[][]\" '/Left:/ { print $2 }' <(amixer sget Master)")
+
+(defwidget volume []
+    (box :space-evenly false
+        (label :class "volicon" :text " ")
+        (eventbox :onscroll "if [ '{}' == 'up' ]; then amixer sset Master 1%+; elif [ '{}' != 'up' ]; then amixer sset Master 1%-; fi"
+            (label :class "voltext" :text current_vol)
+        )
+    )
+)
+
+(deflisten workspaces "~/.config/eww/scripts/workspaces.sh")
+(defwidget workspaces []
+    (box :valign "center" :halign "center" :class "workspacesbox"
+        (literal :content workspaces)
+    )
+)
